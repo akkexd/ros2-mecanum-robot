@@ -1,0 +1,43 @@
+
+
+# Build directories
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.egg
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ROS2 specific
+*.bag
+*.db3
+
+# Compiled files
+*.o
+*.so
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Virtual environments
+venv/
+.venv/
+
