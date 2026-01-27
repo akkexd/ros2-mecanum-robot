@@ -7,15 +7,13 @@ This node:
 2. Converts velocity to wheel speeds using mecanum kinematics
 3. Sends wheel speeds to motors via Rosmaster_Lib (same as Jupyter!)
 
-Location: ~/ros2_ws/src/my_robot_driver/my_robot_driver/driver_node.py
+Location: ~/ros2_ws/src/ros_robot_driver/ros_robot_driver/driver_node.py
 """
 
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32MultiArray
-
-# THIS IS THE SAME LIBRARY YOU USED IN JUPYTER!
 from Rosmaster_Lib import Rosmaster
 
 import math
@@ -38,7 +36,7 @@ class MecanumDriverNode(Node):
         self.w = self.get_parameter('track_width').value / 2  # half of track width
         
         # ============================================================
-        # INITIALIZE ROSMASTER - SAME AS YOUR JUPYTER NOTEBOOK!
+        # INITIALIZE ROSMASTER
         # ============================================================
         self.get_logger().info('Initializing Rosmaster connection...')
         try:
