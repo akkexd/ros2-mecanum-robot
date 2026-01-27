@@ -36,7 +36,7 @@ This project implements a ROS2-based control system for a mecanum wheel robot, f
 ### 1. Clone the repository
 ```bash
 cd ~
-git clone git@github.com:YOUR-USERNAME/ros2-mecanum-robot.git
+git clone git@github.com:akkexd/ros2-mecanum-robot.git
 ```
 
 ### 2. Copy to ROS2 workspace
