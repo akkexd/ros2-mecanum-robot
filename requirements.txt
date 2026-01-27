@@ -1,0 +1,13 @@
+
+
+# ROS2 Dependencies (installed via apt)
+# sudo apt install ros-jazzy-rclpy
+# sudo apt install ros-jazzy-std-msgs
+# sudo apt install ros-jazzy-geometry-msgs
+
+# Python Dependencies
+pyserial>=3.5
+
+# Rosmaster_Lib (install from Yahboom)
+# cd ~/py_install && sudo pip install . --break-system-packages
+

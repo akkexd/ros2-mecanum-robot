@@ -39,29 +39,32 @@ cd ~
 git clone git@github.com:akkexd/ros2-mecanum-robot.git
 ```
 
-### 2. Copy to ROS2 workspace
+### 2. Install ROS2 Dependencies
 ```bash
-cp -r ~/ros2-mecanum-robot/src/ros_robot_driver ~/ros2_ws/src/
-```
-
-### 3. Install dependencies
-```bash
-# Install Rosmaster_Lib
-cd ~/py_install
-sudo pip install . --break-system-packages
-
-# Install ROS2 packages
+sudo apt update
+sudo apt install ros-jazzy-rclpy ros-jazzy-std-msgs ros-jazzy-geometry-msgs
 sudo apt install ros-jazzy-teleop-twist-keyboard
 ```
 
-### 4. Build
+### 3. Install Python Dependencies
 ```bash
+sudo pip install pyserial --break-system-packages
+```
+
+### 4. Install Rosmaster_Lib (Yahboom driver)
+```bash
+cd ~/py_install
+sudo pip install . --break-system-packages
+```
+
+### 5. Copy to ROS2 workspace and build
+```bash
+cp -r ~/ros2-mecanum-robot/src/ros_robot_driver ~/ros2_ws/src/
 cd ~/ros2_ws
 source /opt/ros/jazzy/setup.bash
 colcon build --packages-select ros_robot_driver
 source install/setup.bash
 ```
-
 ## Usage
 
 ### Terminal 1: Start the driver node

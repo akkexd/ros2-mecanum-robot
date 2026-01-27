@@ -2,15 +2,20 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>ros_robot_driver</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>0.0.1</version>
+  <description>Mecanum robot driver for ROS2</description>
   <maintainer email="aungkko.edu@gmail.com">Aung Khant Ko</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
 
+  <!-- ROS2 Dependencies -->
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
 
+  <!-- Build Dependencies -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Test Dependencies -->
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
