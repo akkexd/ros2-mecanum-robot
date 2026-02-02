@@ -1,5 +1,3 @@
-
-
 # Build directories
 build/
 install/
@@ -10,34 +8,26 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
-*.egg
-.pytest_cache/
 
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo
 *~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# ROS2 specific
+# ROS2
 *.bag
 *.db3
 
-# Compiled files
+# Compiled
 *.o
 *.so
 
-# Temporary files
+# Temp
 *.tmp
 *.bak
 *.log
-
-# Virtual environments
-venv/
-.venv/
-

@@ -1,15 +1,13 @@
-# ROS2 Mecanum Wheel Robot
+# ROS2 Mecanum Robot
 
-🤖 An autonomous mecanum wheel mobile robot built with ROS2 Jazzy for TESU Capstone Project.
-
-![Robot Photo](docs/images/robot_photo.jpg)
+🤖 Autonomous mecanum wheel mobile robot with ROS2 Jazzy - TESU Capstone Project
 
 ## Project Overview
 
-This project implements a ROS2-based control system for a mecanum wheel robot, featuring:
+This project implements a ROS2-based control system for a mecanum wheel robot featuring:
 - Omnidirectional movement (forward, backward, strafe, rotate)
-- Keyboard teleoperation control
-- Mecanum wheel inverse kinematics
+- Keyboard teleoperation
+- URDF robot model with TF transforms
 - Future: SLAM mapping and autonomous navigation
 
 ## Hardware
@@ -18,136 +16,103 @@ This project implements a ROS2-based control system for a mecanum wheel robot, f
 |-----------|-------|
 | Computer | Raspberry Pi 5 (8GB) |
 | OS | Ubuntu 24.04 |
-| Motor Controller | Yahboom Expansion Board V3.0 |
-| Chassis | Yahboom Mecanum Chassis |
+| Motor Controller | Yahboom Expansion Board |
+| Chassis | Yahboom Mecanum Chassis (L) |
 | LiDAR | RPLIDAR A2M8 |
 | Depth Camera | Intel RealSense D435 |
-| Motors | DC Encoder Motors (4x) |
+| Motors | MD520Z56_12V with 1:56 reduction |
+| Wheels | 80mm Mecanum wheels |
 
-## Software Requirements
+## Packages
 
-- Ubuntu 24.04
-- ROS2 Jazzy
-- Python 3.12+
-- Rosmaster_Lib (Yahboom driver library)
+| Package | Description |
+|---------|-------------|
+| `ros_robot_driver` | Motor control, mecanum kinematics |
+| `ros_robot_description` | URDF model, TF transforms |
 
 ## Installation
 
-### 1. Clone the repository
+### 1. Clone Repository
 ```bash
 cd ~
-git clone git@github.com:akkexd/ros2-mecanum-robot.git
+git clone git@github.com:YOUR-USERNAME/ros2-mecanum-robot.git
 ```
 
-### 2. Install ROS2 Dependencies
+### 2. Install Dependencies
 ```bash
-sudo apt update
-sudo apt install ros-jazzy-rclpy ros-jazzy-std-msgs ros-jazzy-geometry-msgs
+sudo apt install ros-jazzy-robot-state-publisher
+sudo apt install ros-jazzy-joint-state-publisher-gui
 sudo apt install ros-jazzy-teleop-twist-keyboard
-```
+sudo apt install ros-jazzy-rviz2
 
-### 3. Install Python Dependencies
-```bash
-sudo pip install pyserial --break-system-packages
-```
-
-### 4. Install Rosmaster_Lib (Yahboom driver)
-```bash
+# Install Rosmaster_Lib
 cd ~/py_install
 sudo pip install . --break-system-packages
 ```
 
-### 5. Copy to ROS2 workspace and build
+### 3. Build
 ```bash
-cp -r ~/ros2-mecanum-robot/src/ros_robot_driver ~/ros2_ws/src/
+cp -r ~/ros2-mecanum-robot/src/* ~/ros2_ws/src/
 cd ~/ros2_ws
 source /opt/ros/jazzy/setup.bash
-colcon build --packages-select ros_robot_driver
+colcon build
 source install/setup.bash
 ```
+
 ## Usage
 
-### Terminal 1: Start the driver node
+### Drive Robot with Keyboard
 ```bash
-source /opt/ros/jazzy/setup.bash
-source ~/ros2_ws/install/setup.bash
+# Terminal 1: Start driver
 ros2 run ros_robot_driver driver_node
-```
 
-### Terminal 2: Keyboard control
-```bash
-source /opt/ros/jazzy/setup.bash
+# Terminal 2: Keyboard control
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 
-### Keyboard Controls
-```
-Moving around:
-   u    i    o
-   j    k    l
-   m    ,    .
-
-i/k = forward/stop
-j/l = rotate left/right
-u/o = forward + rotate
-m/. = backward + rotate
-
-For strafing (hold Shift):
-   J    K    L
-   (left) (stop) (right)
-```
-
-### Manual velocity commands
+### View Robot Model in RViz2
 ```bash
-# Forward
-ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}}"
-
-# Rotate
-ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{angular: {z: 0.5}}"
-
-# Forward + Rotate
-ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}, angular: {z: 0.3}}"
+ros2 launch ros_robot_description display.launch.py
 ```
 
 ## Project Structure
-
 ```
 ros2-mecanum-robot/
 ├── README.md
 ├── docs/
-│   ├── SETUP.md
 │   ├── TROUBLESHOOTING.md
 │   ├── WEEK3_PROGRESS.md
-│   └── images/
+│   └── WEEK4_5_PROGRESS.md
 ├── src/
-│   └── ros_robot_driver/
-│       ├── ros_robot_driver/
-│       │   ├── __init__.py
-│       │   └── driver_node.py
-│       ├── package.xml
-│       ├── setup.py
-│       └── setup.cfg
-├── scripts/
-├── config/
-└── maps/
+│   ├── ros_robot_driver/
+│   │   └── ros_robot_driver/
+│   │       └── driver_node.py
+│   └── ros_robot_description/
+│       ├── urdf/
+│       │   └── mecanum_robot.urdf
+│       └── launch/
+│           └── display.launch.py
+└── scripts/
 ```
 
 ## Progress
 
-- [x] Week 1: Hardware setup, motor testing with Rosmaster_Lib
-- [x] Week 2: ROS2 workspace setup, package creation
-- [x] Week 3: Driver node implementation, keyboard teleoperation
-- [ ] Week 4: TF2 coordinate transforms
-- [ ] Week 5: URDF model creation
+- [x] Week 1: Hardware setup, motor testing
+- [x] Week 2: ROS2 workspace, package creation
+- [x] Week 3: Driver node, keyboard teleoperation
+- [x] Week 4-5: TF2 transforms, URDF model
 - [ ] Week 6: Sensor integration (LiDAR, Camera)
 - [ ] Week 7-8: SLAM mapping
-- [ ] Week 9: Odometry implementation
+- [ ] Week 9: Odometry
 - [ ] Week 10-11: Nav2 navigation
 - [ ] Week 12: Capstone completion
 
-## Troubleshooting
-
-See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions.
-
 ## Author
-Aung Khant Ko
+
+**Aung**
+- TESU Computer Science Student
+- Email: aungkko.edu@gmail.com
+
+## License
+
+MIT License
