@@ -154,7 +154,7 @@
     <!-- ADJUST: x=forward, y=left, z=up from base_link center -->
     <!-- LiDAR: 12cm forward, 3cm left, 9cm up from base_link -->
     <!-- Based on actual measurement: 17cm from ground, 3cm from front edge, offset left -->
-    <origin xyz="0.12 0.0 0.09" rpy="0 0 0"/>
+    <origin xyz="0.12 0.0 0.09" rpy="0 0 3.14159"/>
   </joint>
 
   <!-- Intel RealSense D435 -->
