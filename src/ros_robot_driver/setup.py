@@ -11,13 +11,10 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=[
-        'setuptools',
-        'pyserial',      # Required by Rosmaster_Lib
-    ],
+    install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='Aung',
-    maintainer_email='aungkko.edu@gmail.com',
+    maintainer='ros2mobilerobot',
+    maintainer_email='ros2mobilerobot@todo.todo',
     description='Mecanum robot driver for ROS2',
     license='MIT',
     extras_require={

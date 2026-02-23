@@ -1,0 +1,366 @@
+# =============================================================================
+# MERGED NAV2 PARAMETERS
+# = Old aggressive AMCL (compensates for sparse encoder data)
+# + New optimizations (A*, 20Hz controller, faster costmaps)
+# =============================================================================
+
+amcl:
+  ros__parameters:
+    use_sim_time: false
+    
+    # ============================================
+    # MOTION MODEL - AGGRESSIVE (from old config)
+    # HIGH VALUES because encoder data is sparse/drops to zero
+    # This tells AMCL: "don't trust odometry, trust laser more"
+    # ============================================
+    alpha1: 0.8      # Rotation error from rotation
+    alpha2: 0.8      # Rotation error from translation
+    alpha3: 0.8      # Translation error from translation
+    alpha4: 0.8      # Translation error from rotation
+    alpha5: 0.8      # Translation error from strafe (mecanum)
+    
+    # Frame configuration
+    base_frame_id: "base_footprint"
+    global_frame_id: "map"
+    odom_frame_id: "odom"
+    
+    # ============================================
+    # LASER MODEL - AGGRESSIVE SCAN MATCHING (from old)
+    # ============================================
+    laser_model_type: "likelihood_field"
+    laser_likelihood_max_dist: 2.0
+    laser_max_range: 8.0
+    laser_min_range: 0.12
+    max_beams: 120           # MORE beams = better scan matching
+    sigma_hit: 0.15          # Tighter matching
+    
+    do_beamskip: false
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    lambda_short: 0.1
+    
+    # ============================================
+    # PARTICLE FILTER - AGGRESSIVE (from old)
+    # Many particles needed to compensate for bad odometry
+    # ============================================
+    max_particles: 5000 #change 8000 to 5000
+    min_particles: 1000 #change 2000 to 1000
+    pf_err: 0.01
+    pf_z: 0.99
+    resample_interval: 1     # Resample every update
+    
+    # Recovery - auto-fix when lost
+    recovery_alpha_fast: 0.2
+    recovery_alpha_slow: 0.01
+    
+    # ============================================
+    # UPDATE FREQUENCY - VERY FREQUENT (from old)
+    # Compensates for sparse encoder data
+    # ============================================
+    update_min_a: 0.02     # Update every ~1.1 degrees
+    update_min_d: 0.02     # Update every 2cm
+    
+    # Sensor model weights - trust laser heavily
+    z_hit: 0.9
+    z_max: 0.02
+    z_rand: 0.05
+    z_short: 0.03
+    
+    # TF settings
+    tf_broadcast: true
+    transform_tolerance: 5.0   # Keep high (from old) for sparse odom
+    
+    save_pose_rate: 0.5
+    
+    # Auto initial pose at map origin (from new)
+    set_initial_pose: true
+    initial_pose_x: 0.0
+    initial_pose_y: 0.0
+    initial_pose_a: 0.0
+    
+    # Mecanum omnidirectional model
+    robot_model_type: "nav2_amcl::OmniMotionModel"
+    
+    scan_topic: scan
+
+# ============================================
+# BT NAVIGATOR (from new - with error codes)
+# ============================================
+bt_navigator:
+  ros__parameters:
+    use_sim_time: false
+    global_frame: map
+    robot_base_frame: base_footprint
+    odom_topic: /odom
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    action_server_result_timeout: 900.0
+    navigators: ["navigate_to_pose", "navigate_through_poses"]
+    navigate_to_pose:
+      plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
+    navigate_through_poses:
+      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
+    error_code_names:
+      - compute_path_error_code
+      - follow_path_error_code
+
+# ============================================
+# CONTROLLER SERVER - 20Hz FROM NEW CONFIG
+# ============================================
+controller_server:
+  ros__parameters:
+    use_sim_time: false
+    
+    controller_frequency: 10.0    # 20Hz to 10 Hz
+    #20 Hz controller is too much for Pi 5. The logs show it constantly running at 13-18 Hz — the Pi can't keep up, causing jerky motion.
+    
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.5
+    
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+    
+    # Progress checker (from old - lenient for slow movement)
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.08
+      movement_time_allowance: 30.0
+    
+    # Goal checker (from old - tight tolerance)
+    general_goal_checker:
+      stateful: True
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.10
+      yaw_goal_tolerance: 0.2
+    
+    # ============================================
+    # DWB - MODERATE SPEEDS (compromise old/new)
+    # ============================================
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: False
+
+      # Motor values hitting 100/-100 (max saturation). During the 1.5m goal, the robot was spinning wildly. The velocity limits are too high.
+      # Velocity limits - moderate (between old slow and new fast)
+      # before 
+      # min_vel_x: -0.10
+      # min_vel_y: -0.10
+      # max_vel_x: 0.15
+      # max_vel_y: 0.10
+      # max_vel_theta: 0.5
+      
+      # min_speed_xy: 0.0
+      # max_speed_xy: 0.15
+
+      min_vel_x: -0.06
+      min_vel_y: -0.06
+      max_vel_x: 0.10          # Moderate forward speed
+      max_vel_y: 0.06           # Moderate strafe
+      max_vel_theta: 0.3        # Moderate rotation
+      
+      min_speed_xy: 0.0
+      max_speed_xy: 0.10
+      min_speed_theta: 0.0
+      
+      # Before
+      # acc_lim_x: 0.3
+      # acc_lim_y: 0.3
+      # acc_lim_theta: 0.6
+      # decel_lim_x: -0.3
+      # decel_lim_y: -0.3
+      # decel_lim_theta: -0.6
+
+      # Acceleration - moderate
+      acc_lim_x: 0.2
+      acc_lim_y: 0.2
+      acc_lim_theta: 0.3
+      decel_lim_x: -0.2
+      decel_lim_y: -0.2
+      decel_lim_theta: -0.3
+      
+      # Trajectory sampling (from new - more samples)
+      vx_samples: 20
+      vy_samples: 10
+      vtheta_samples: 20
+      sim_time: 2.0             # Between old 3.0 and new 1.5
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      
+      # Tolerances
+      transform_tolerance: 1.0
+      xy_goal_tolerance: 0.10
+      trans_stopped_velocity: 0.10
+      short_circuit_trajectory_evaluation: True
+      stateful: True
+      
+      # Critics
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      
+      BaseObstacle.scale: 0.02
+      PathAlign.scale: 32.0
+      PathAlign.forward_point_distance: 0.1
+      PathDist.scale: 32.0
+      GoalAlign.scale: 24.0
+      GoalAlign.forward_point_distance: 0.1
+      GoalDist.scale: 24.0
+      RotateToGoal.scale: 32.0
+      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.lookahead_time: -1.0
+      Oscillation.scale: 1.0
+
+# ============================================
+# LOCAL COSTMAP - FASTER UPDATES (from new)
+# ============================================
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 10.0      # NEW: faster updates
+      publish_frequency: 5.0      # NEW: faster publish
+      global_frame: odom
+      robot_base_frame: base_footprint
+      use_sim_time: false
+      
+      rolling_window: true
+      width: 3
+      height: 3
+      resolution: 0.05
+      robot_radius: 0.18
+      
+      transform_tolerance: 1.0    # Keep from old (sparse odom)
+      
+      plugins: ["obstacle_layer", "inflation_layer"]
+      
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        combination_method: 1
+        
+        scan:
+          topic: /scan
+          data_type: "LaserScan"
+          marking: True
+          clearing: True
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          obstacle_max_range: 3.0
+          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.0
+          inf_is_valid: False
+          
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 2.5     # From old
+        inflation_radius: 0.35       # From old (safer)
+        
+      always_send_full_costmap: True
+
+# ============================================
+# GLOBAL COSTMAP - FASTER UPDATES (from new)
+# ============================================
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      update_frequency: 2.0       # NEW: faster
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: base_footprint
+      use_sim_time: false
+      
+      robot_radius: 0.18
+      resolution: 0.05
+      track_unknown_space: true
+      
+      transform_tolerance: 1.0    # Keep from old
+      
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+        enabled: True
+        
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        combination_method: 1
+        
+        scan:
+          topic: /scan
+          data_type: "LaserScan"
+          marking: True
+          clearing: True
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          obstacle_max_range: 3.0
+          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.0
+          inf_is_valid: False
+          
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 2.5     # From old
+        inflation_radius: 0.35       # From old (safer)
+        
+      always_send_full_costmap: True
+
+# ============================================
+# MAP SERVER
+# ============================================
+map_server:
+  ros__parameters:
+    use_sim_time: false
+    yaml_filename: ""
+
+# ============================================
+# PLANNER SERVER - A* ENABLED (from new)
+# ============================================
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 20.0
+    use_sim_time: false
+    planner_plugins: ["GridBased"]
+    
+    GridBased:
+      plugin: "nav2_navfn_planner::NavfnPlanner"
+      tolerance: 0.25            # NEW: tighter
+      use_astar: true            # NEW: A* enabled!
+      allow_unknown: true
+
+# ============================================
+# BEHAVIOR SERVER
+# ============================================
+behavior_server:
+  ros__parameters:
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
+    
+    spin:
+      plugin: "nav2_behaviors::Spin"
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors::DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+      
+    global_frame: odom
+    robot_base_frame: base_footprint
+    transform_tolerance: 1.0    # Keep from old
+    use_sim_time: false
+    simulate_ahead_time: 2.0
+    
+    # Moderate recovery speeds (between old and new)
+    max_rotational_vel: 0.3
+    min_rotational_vel: 0.08
+    rotational_acc_lim: 0.5
