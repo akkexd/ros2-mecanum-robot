@@ -8,7 +8,7 @@ This project implements a ROS2-based control system for a mecanum wheel robot fe
 - Omnidirectional movement (forward, backward, strafe, rotate)
 - Keyboard teleoperation
 - URDF robot model with TF transforms
-- Future: SLAM mapping and autonomous navigation
+- SLAM mapping and Nav2
 
 ## Hardware
 
