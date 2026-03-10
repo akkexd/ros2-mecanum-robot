@@ -76,7 +76,7 @@ class MecanumDriverNode(Node):
         self.imu_pub = self.create_publisher(Imu, 'imu/data_raw', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         
-        self.odom_timer = self.create_timer(0.02, self.update_odometry)
+        self.odom_timer = self.create_timer(0.05, self.update_odometry)
         self.imu_timer = self.create_timer(0.02, self.publish_imu)
         self.last_cmd_time = self.get_clock().now()
         self.safety_timer = self.create_timer(0.1, self.safety_check)
@@ -88,11 +88,37 @@ class MecanumDriverNode(Node):
 
     def cmd_vel_callback(self, msg: Twist):
         self.last_cmd_time = self.get_clock().now()
+        # Velocity gate: if ALL commands are below deadzone-safe threshold, stop
+        # speed = math.sqrt(msg.linear.x**2 + msg.linear.y**2)
+        # rotation = abs(msg.angular.z)
+        
+        # if speed < 0.02 and rotation < 0.12:
+        #     if self.bot:
+        #         self.bot.set_motor(0, 0, 0, 0)
+        #     return
         
         # MOTORS ONLY - odometry comes from encoders
+        # Velocity gate: stop if all commands are tiny
+        # speed = math.sqrt(msg.linear.x**2 + msg.linear.y**2)
+        # rotation = abs(msg.angular.z)
+        # if speed < 0.02 and rotation < 0.05:
+        #     if self.bot:
+        #         self.bot.set_motor(0, 0, 0, 0)
+        #     return
+
         motor_vx = -msg.linear.y
         motor_vy = -msg.linear.x
-        motor_wz = -msg.angular.z
+        #motor_wz = -msg.angular.z
+        # Suppress nav2 rotation noise; allow teleop (>0.1 rad/s)
+        # if abs(msg.angular.z) < 0.3:
+        #     motor_wz = 0.0
+        # else:
+        #     motor_wz = -msg.angular.z
+        #if abs(msg.angular.z) < 0.05:
+        if abs(msg.angular.z) < 0.3:
+            motor_wz = 0.0
+        else:
+            motor_wz = -msg.angular.z
         
         lw = self.l + self.w
         w1 = (1/self.r) * (motor_vx - motor_vy - lw * motor_wz)
@@ -100,12 +126,38 @@ class MecanumDriverNode(Node):
         w3 = (1/self.r) * (motor_vx + motor_vy - lw * motor_wz)
         w4 = (1/self.r) * (motor_vx - motor_vy + lw * motor_wz)
         
-        scale = 50
-        m1 = max(-100, min(100, int(w1 * scale)))
-        m2 = max(-100, min(100, int(w2 * scale)))
-        m3 = max(-100, min(100, int(w3 * scale)))
-        m4 = max(-100, min(100, int(w4 * scale)))
+        scale = 25
+        MAX_MOTOR = 90
+        m1 = max(-MAX_MOTOR, min(MAX_MOTOR, int(w1 * scale)))
+        m2 = max(-MAX_MOTOR, min(MAX_MOTOR, int(w2 * scale)))
+        m3 = max(-MAX_MOTOR, min(MAX_MOTOR, int(w3 * scale)))
+        m4 = max(-MAX_MOTOR, min(MAX_MOTOR, int(w4 * scale)))
         
+        # Deadzone compensation for carpet friction
+        # MIN_MOTOR = 40
+        # def apply_deadzone(val):
+        #     if val > 0 and val < MIN_MOTOR:
+        #         return MIN_MOTOR
+        #     elif val < 0 and val > -MIN_MOTOR:
+        #         return -MIN_MOTOR
+        #     return val
+        
+        # if any(m != 0 for m in [m1, m2, m3, m4]):
+        #     m1 = apply_deadzone(m1)
+        #     m2 = apply_deadzone(m2)
+        #     m3 = apply_deadzone(m3)
+        #     m4 = apply_deadzone(m4)
+
+        # Proportional deadzone: scale ALL motors together to preserve ratios
+        MIN_MOTOR = 40
+        max_abs = max(abs(m1), abs(m2), abs(m3), abs(m4))
+        if max_abs > 0 and max_abs < MIN_MOTOR:
+            scale_up = MIN_MOTOR / max_abs
+            m1 = int(m1 * scale_up)
+            m2 = int(m2 * scale_up)
+            m3 = int(m3 * scale_up)
+            m4 = int(m4 * scale_up)
+                
         if self.bot:
             self.bot.set_motor(m1, m2, m3, m4)
             self.get_logger().info(
@@ -197,7 +249,7 @@ class MecanumDriverNode(Node):
                 if attitude and len(attitude) >= 3:
                     roll = math.radians(attitude[0]) if attitude[0] else 0.0
                     pitch = math.radians(attitude[1]) if attitude[1] else 0.0
-                    yaw = math.radians(attitude[2]) if attitude[2] else 0.0
+                    yaw = -math.radians(attitude[2]) if attitude[2] else 0.0
                     imu_msg.orientation = self.euler_to_quaternion(roll, pitch, yaw)
                 else:
                     imu_msg.orientation.w = 1.0
@@ -210,9 +262,9 @@ class MecanumDriverNode(Node):
             try:
                 gyro = self.bot.get_gyroscope_data()
                 if gyro and len(gyro) >= 3:
-                    imu_msg.angular_velocity.x = math.radians(gyro[0]) if gyro[0] else 0.0
-                    imu_msg.angular_velocity.y = math.radians(gyro[1]) if gyro[1] else 0.0
-                    imu_msg.angular_velocity.z = math.radians(gyro[2]) if gyro[2] else 0.0
+                    imu_msg.angular_velocity.x = gyro[0] if gyro[0] else 0.0 #imu_msg.angular_velocity.x = math.radians(gyro[0]) if gyro[0] else 0.0
+                    imu_msg.angular_velocity.y = gyro[1] if gyro[1] else 0.0  #imu_msg.angular_velocity.y = math.radians(gyro[1]) if gyro[1] else 0.0
+                    imu_msg.angular_velocity.z = gyro[2] if gyro[2] else 0.0 #imu_msg.angular_velocity.z = -math.radians(gyro[2]) if gyro[2] else 0.0
                 imu_msg.angular_velocity_covariance[0] = 0.01
                 imu_msg.angular_velocity_covariance[4] = 0.01
                 imu_msg.angular_velocity_covariance[8] = 0.01

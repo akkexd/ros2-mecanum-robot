@@ -8,7 +8,7 @@ ekf_filter_node:
   ros__parameters:
     # Lower frequency to reduce CPU load on Pi 5
     frequency: 30.0              # 30Hz (was 50Hz) - still smooth
-    sensor_timeout: 0.2
+    sensor_timeout: 0.5
     two_d_mode: true             # 2D navigation only
     
     # Frame configuration
@@ -26,29 +26,31 @@ ekf_filter_node:
     # Trust: Position and linear velocity
     # Don't trust: Orientation (use IMU instead)
     # ============================================
+    # WHEEL ODOM - velocity only, NO position, NO yaw
     odom0: /wheel_odom
-    odom0_config: [true,  true,  false,    # x, y, z position - trust x,y
-                   false, false, true,    # roll, pitch, yaw - use IMU
+    odom0_config: [false, false, false,    # x, y, z position 
+                   false, false, false,    # roll, pitch, yaw - use IMU
                    true,  true,  false,    # vx, vy, vz - trust linear vel
-                   false, false, true,    # vroll, vpitch, vyaw - use IMU
+                   false, false, false,    # vroll, vpitch, vyaw - use IMU
                    false, false, false]    # ax, ay, az
     odom0_differential: false
     odom0_relative: false
-    odom0_queue_size: 5
+    odom0_queue_size: 10
     
     # ============================================
     # IMU INPUT - FOR ORIENTATION
     # Trust: Yaw and angular velocity (critical for rotation!)
     # ============================================
+    # IMU - yaw velocity ONLY (no absolute orientation)
     imu0: /imu/data_raw
     imu0_config: [false, false, false,    # x, y, z - IMU doesn't give position
-                  false, false, false,     # roll, pitch, YAW - trust yaw!
+                  false, false, false,     # roll, pitch, YAW 
                   false, false, false,    # vx, vy, vz
-                  false, false, false,     # vroll, vpitch, VYAW - trust angular vel!
+                  false, false, true,     # vroll, vpitch, VYAW - trust angular vel!
                   false, false, false]    # ax, ay, az
     imu0_differential: false
     imu0_relative: false
-    imu0_queue_size: 5
+    imu0_queue_size: 10
     imu0_remove_gravitational_acceleration: true
     
     # ============================================
@@ -56,24 +58,23 @@ ekf_filter_node:
     # Higher = less trust in model prediction
     # ============================================
     process_noise_covariance: [
-      0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
-      0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
       0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
       0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
       0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
-      0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
-      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
-      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
-      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,
       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01
     ]
-    
-    # Initial state uncertainty
+
     initial_estimate_covariance: [
       1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
       0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,

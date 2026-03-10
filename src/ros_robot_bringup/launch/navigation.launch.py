@@ -56,8 +56,8 @@ def generate_launch_description():
             package='ros_robot_driver',
             executable='driver_node',
             name='mecanum_driver',
-            parameters=[{'publish_tf': True}],  # EKF publishes TF
-            remappings=[('/wheel_odom', '/odom')],
+            parameters=[{'publish_tf': False}],  # EKF publishes TF
+            remappings=[], # remove the /wheel_odom → /odom remap
             output='screen'
         ),
         
@@ -89,27 +89,69 @@ def generate_launch_description():
             }],
             output='screen'
         ),
+
+        # Depth Camera → Virtual 2D Scan (for obstacle avoidance)
+        # Node(
+        #     package='depthimage_to_laserscan',
+        #     executable='depthimage_to_laserscan_node',
+        #     name='depth_to_scan',
+        #     parameters=[{
+        #         'scan_height': 30,
+        #         'scan_time': 0.033,
+        #         'range_min': 0.20,
+        #         'range_max': 3.0,
+        #         'output_frame_id': 'camera_depth_optical_frame',
+        #     }],
+        #     remappings=[
+        #         ('image', '/camera/camera/depth/image_rect_raw'),
+        #         ('camera_info', '/camera/camera/depth/camera_info'),
+        #         ('scan', '/camera_scan'),
+        #     ],
+        #     output='screen'
+        # ),
+
+        # Depth Camera → Virtual 2D Scan (for obstacle avoidance)
+        Node(
+            package='depthimage_to_laserscan',
+            executable='depthimage_to_laserscan_node',
+            name='depth_to_scan',
+            parameters=[{
+                'scan_height': 30,
+                'scan_time': 0.033,
+                'range_min': 0.20,
+                'range_max': 3.0,
+                'output_frame_id': 'camera_depth_optical_frame',
+            }],
+            remappings=[
+                ('depth', '/camera/camera/depth/image_rect_raw'),
+                ('depth_camera_info', '/camera/camera/depth/camera_info'),
+                ('scan', '/camera_scan'),
+            ],
+            output='screen'
+        ),
+
+        
         
         # ============================================================
         # PHASE 2: EKF SENSOR FUSION (Delay 2s)
         # Fuses wheel odometry + IMU for accurate orientation
         # ============================================================
         
-        # TimerAction(
-        #     period=2.0,
-        #     actions=[
-        #         Node(
-        #             package='robot_localization',
-        #             executable='ekf_node',
-        #             name='ekf_filter_node',
-        #             output='screen',
-        #             parameters=[ekf_params_file],
-        #             remappings=[
-        #                 ('/odometry/filtered', '/odom')
-        #             ]
-        #         ),
-        #     ]
-        # ),
+        TimerAction(
+            period=2.0,
+            actions=[
+                Node(
+                    package='robot_localization',
+                    executable='ekf_node',
+                    name='ekf_filter_node',
+                    output='screen',
+                    parameters=[ekf_params_file],
+                    remappings=[
+                        ('/odometry/filtered', '/odom')
+                    ]
+                ),
+            ]
+        ),
         
         # ============================================================
         # PHASE 3: MAP SERVER (Delay 4s)
@@ -203,7 +245,10 @@ def generate_launch_description():
                     executable='bt_navigator',
                     name='bt_navigator',
                     output='screen',
-                    parameters=[nav2_params_file]
+                    parameters=[nav2_params_file],
+                    remappings=[
+                        ('/goal_pose', '/goal_pose_unused'),
+                    ],
                 ),
             ]
         ),

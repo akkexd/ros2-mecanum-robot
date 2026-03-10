@@ -23,6 +23,8 @@ setup(
     entry_points={
         'console_scripts': [
             'driver_node = ros_robot_driver.driver_node:main',
+            'rotate_after_goal = ros_robot_driver.rotate_after_goal:main',
+            'goal_manager = ros_robot_driver.goal_manager:main',
         ],
     },
 )
