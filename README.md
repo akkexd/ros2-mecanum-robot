@@ -95,18 +95,6 @@ ros2-mecanum-robot/
 └── scripts/
 ```
 
-## Progress
-
-- [x] Week 1: Hardware setup, motor testing
-- [x] Week 2: ROS2 workspace, package creation
-- [x] Week 3: Driver node, keyboard teleoperation
-- [x] Week 4-5: TF2 transforms, URDF model
-- [ ] Week 6: Sensor integration (LiDAR, Camera)
-- [ ] Week 7-8: SLAM mapping
-- [ ] Week 9: Odometry
-- [ ] Week 10-11: Nav2 navigation
-- [ ] Week 12: Capstone completion
-
 ## Author
 
 **Aung**
