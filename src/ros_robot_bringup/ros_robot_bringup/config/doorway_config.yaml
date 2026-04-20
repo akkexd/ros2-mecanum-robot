@@ -1,0 +1,46 @@
+# =============================================================================
+# DOORWAY CONFIGURATION 
+# =============================================================================
+# Layout: Bedroom → [DOORWAY] → Long Hallway → L-turn (open) → Kitchen
+# All coordinates measured via Publish Point in RViz on apartment_full map
+# =============================================================================
+
+doorways:
+  # Only one doorway in the apartment (bedroom → hallway)
+  bedroom_to_hallway:
+    doorway_center: [3.774, 2.958]
+    zone_radius: 0.8
+    transit_heading: 0.0988
+    staging_point: [2.50, 2.95]
+    exit_point: [4.457, 3.00]
+    width_m: 0.76
+
+# =============================================================================
+# WAYPOINT GRAPH
+# =============================================================================
+# W0 → [doorway] → W1 → W2 → W3 → W4
+#
+# bedroom    →  hallway_mid  →  hallway_end  →  corner  →  kitchen
+#
+# The corner (W3) is a wide-open L-turn, no doorway needed.
+# Nav2 handles it with strafing/rotation.
+# =============================================================================
+
+waypoints:
+  bedroom_center:   [0.0, -0.31]
+  bedroom_staging:  [2.843, 2.679]
+  hallway_entry:    [4.457, 2.839]
+  hallway_mid:      [6.50, 2.83]
+  hallway_end:      [10.45, 2.83]
+  corner:           [10.60, 1.70]
+  kitchen_entry:    [11.10, -0.50]
+  kitchen_center:   [12.84, -1.04]
+
+edges:
+  - {from: bedroom_center, to: bedroom_staging}
+  - {from: bedroom_staging, to: hallway_entry, doorway: bedroom_to_hallway}
+  - {from: hallway_entry, to: hallway_mid}
+  - {from: hallway_mid, to: hallway_end}
+  - {from: hallway_end, to: corner}
+  - {from: corner, to: kitchen_entry}
+  - {from: kitchen_entry, to: kitchen_center}

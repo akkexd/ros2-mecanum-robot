@@ -1,34 +1,7 @@
-# Build directories
 build/
 install/
 log/
-
-# Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-.eggs/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# ROS2
-*.bag
-*.db3
-
-# Compiled
-*.o
-*.so
-
-# Temp
-*.tmp
-*.bak
-*.log
-*.backup
+*.pyc
+.colcon/
+ekf_logs/

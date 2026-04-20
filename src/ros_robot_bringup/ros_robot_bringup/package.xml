@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ros_robot_bringup</name>
+  <version>0.0.1</version>
+  <description>Robot bringup launch files</description>
+  <maintainer email="aungkko.edu@gmail.com">Aung</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+  <depend>rclpy</depend>
+  
+  <exec_depend>ros_robot_description</exec_depend>
+  <exec_depend>ros_robot_driver</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>sllidar_ros2</exec_depend>
+  <exec_depend>realsense2_camera</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

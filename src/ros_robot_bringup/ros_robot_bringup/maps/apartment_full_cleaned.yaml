@@ -1,0 +1,7 @@
+image: apartment_full_cleaned.pgm
+mode: trinary
+resolution: 0.050
+origin: [-0.443, -2.916, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
