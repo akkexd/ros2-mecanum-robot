@@ -69,7 +69,7 @@ amcl:
     
     set_initial_pose: true
     initial_pose_x: 0.0
-    initial_pose_y: 0.0
+    initial_pose_y: -0.31
     initial_pose_a: 0.0
     
     robot_model_type: "nav2_amcl::OmniMotionModel"
@@ -86,7 +86,7 @@ bt_navigator:
     robot_base_frame: base_footprint
     odom_topic: /odom
     bt_loop_duration: 10
-    default_server_timeout: 20
+    default_server_timeout: 30  #was 20
     wait_for_service_timeout: 1000
     action_server_result_timeout: 900.0
     navigators: ["navigate_to_pose", "navigate_through_poses"]
@@ -141,7 +141,7 @@ controller_server:
       max_vel_theta: 0.0
       
       min_speed_xy: 0.0
-      max_speed_xy: 0.055
+      max_speed_xy: 0.045
       min_speed_theta: 0.0
       
       acc_lim_x: 0.15
@@ -195,7 +195,7 @@ local_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan
+        observation_sources: scan depth_scan
         combination_method: 1
         
         # Source 1: RPLIDAR — 360° coverage, marks + clears
@@ -231,8 +231,8 @@ local_costmap:
           
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.5
-        inflation_radius: 0.35
+        cost_scaling_factor: 10.0
+        inflation_radius: 0.35 #was 0.35 - too wide for doorways
         
       always_send_full_costmap: True
 
@@ -264,7 +264,7 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan
+        observation_sources: scan depth_scan
         combination_method: 1
         
         # Source 1: RPLIDAR — 360° coverage, marks + clears
@@ -298,8 +298,8 @@ global_costmap:
           
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.5
-        inflation_radius: 0.35
+        cost_scaling_factor: 10.0
+        inflation_radius: 0.20 #was0.25 #was 0.35 - too wide for doorways
         
       always_send_full_costmap: True
 
@@ -322,7 +322,7 @@ planner_server:
     
     GridBased:
       plugin: "nav2_navfn_planner::NavfnPlanner"
-      tolerance: 0.25
+      tolerance: 0.30 #was 0.25
       use_astar: true
       allow_unknown: true
 

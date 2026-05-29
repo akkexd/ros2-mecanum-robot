@@ -1,23 +1,23 @@
 # =============================================================================
-# NAV2 PARAMETERS - AGGRESSIVE PARTICLE FILTER + MECANUM OPTIMIZATION
-# Designed for: High odometry drift, carpet surface, 30cm+ goals
-# Key: Fast AMCL correction + EKF sensor fusion
+# MERGED NAV2 PARAMETERS
+# = Old aggressive AMCL (compensates for sparse encoder data)
+# + New optimizations (A*, 20Hz controller, faster costmaps)
+# + RealSense depth camera obstacle avoidance (depth_scan)
 # =============================================================================
-
 amcl:
   ros__parameters:
     use_sim_time: false
     
     # ============================================
-    # MOTION MODEL - CRITICAL FOR MECANUM ON CARPET
-    # HIGH VALUES = "Odometry is unreliable, trust laser more"
-    # This triggers more aggressive particle spread and resampling
+    # MOTION MODEL - AGGRESSIVE (from old config)
+    # HIGH VALUES because encoder data is sparse/drops to zero
+    # This tells AMCL: "don't trust odometry, trust laser more"
     # ============================================
-    alpha1: 0.8      # Rotation error from rotation (high = expect drift)
+    alpha1: 0.8      # Rotation error from rotation
     alpha2: 0.8      # Rotation error from translation
     alpha3: 0.8      # Translation error from translation
     alpha4: 0.8      # Translation error from rotation
-    alpha5: 0.8      # Translation error from strafe (mecanum specific!)
+    alpha5: 0.8      # Translation error from strafe (mecanum)
     
     # Frame configuration
     base_frame_id: "base_footprint"
@@ -25,16 +25,15 @@ amcl:
     odom_frame_id: "odom"
     
     # ============================================
-    # LASER MODEL - AGGRESSIVE SENSOR UPDATE
+    # LASER MODEL - AGGRESSIVE SCAN MATCHING (from old)
     # ============================================
     laser_model_type: "likelihood_field"
     laser_likelihood_max_dist: 2.0
     laser_max_range: 8.0
     laser_min_range: 0.12
-    max_beams: 120           # MORE beams = better scan matching
-    sigma_hit: 0.15          # Tighter matching
+    max_beams: 120
+    sigma_hit: 0.15
     
-    # Beam skip disabled for maximum correction
     do_beamskip: false
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
@@ -42,53 +41,44 @@ amcl:
     lambda_short: 0.1
     
     # ============================================
-    # PARTICLE FILTER - AGGRESSIVE RESAMPLING
-    # More particles + frequent resampling = better convergence
+    # PARTICLE FILTER - AGGRESSIVE (from old)
     # ============================================
-    max_particles: 8000      # LOTS of particles for coverage
-    min_particles: 2000      # Minimum high for stability
-    pf_err: 0.01             # Low error threshold = more accurate
+    max_particles: 5000
+    min_particles: 1000
+    pf_err: 0.01
     pf_z: 0.99
-    resample_interval: 1     # Resample EVERY update (aggressive)
+    resample_interval: 1
+    
+    recovery_alpha_fast: 0.2
+    recovery_alpha_slow: 0.01
     
     # ============================================
-    # RECOVERY - AUTO-FIX WHEN LOST
-    # These enable particle spread when localization quality drops
+    # UPDATE FREQUENCY - VERY FREQUENT (from old)
     # ============================================
-    recovery_alpha_fast: 0.2    # Fast recovery (higher = more aggressive)
-    recovery_alpha_slow: 0.01   # Slow recovery baseline
+    update_min_a: 0.02
+    update_min_d: 0.02
     
-    # ============================================
-    # UPDATE FREQUENCY - VERY FREQUENT CORRECTIONS
-    # Lower values = AMCL updates more often = faster correction
-    # ============================================
-    update_min_a: 0.02     # Update every 0.02 rad (~1.1°) rotation
-    update_min_d: 0.02     # Update every 2cm movement
+    z_hit: 0.9
+    z_max: 0.02
+    z_rand: 0.05
+    z_short: 0.03
     
-    # ============================================
-    # SENSOR MODEL WEIGHTS - TRUST LASER HEAVILY
-    # ============================================
-    z_hit: 0.9             # 90% weight on good laser readings
-    z_max: 0.02            # 2% weight on max range
-    z_rand: 0.05           # 5% random noise
-    z_short: 0.03          # 3% short readings
-    
-    # TF settings
     tf_broadcast: true
-    transform_tolerance: 5.0 # Increased from 2.0 to 5.0
-    
-    set_initial_pose: false      # Let user set initial pose
-    initial_pose_x: 0.0
-    initial_pose_y: 0.0
-    initial_pose_a: 0.0
-    # Save pose for recovery
+    transform_tolerance: 1.0
     save_pose_rate: 0.5
     
-    # Robot model for mecanum (omnidirectional)
+    set_initial_pose: true
+    initial_pose_x: 0.0
+    initial_pose_y: -0.31
+    initial_pose_a: 0.0
+    
     robot_model_type: "nav2_amcl::OmniMotionModel"
     
     scan_topic: scan
 
+# ============================================
+# BT NAVIGATOR
+# ============================================
 bt_navigator:
   ros__parameters:
     use_sim_time: false
@@ -96,7 +86,7 @@ bt_navigator:
     robot_base_frame: base_footprint
     odom_topic: /odom
     bt_loop_duration: 10
-    default_server_timeout: 20
+    default_server_timeout: 30  #was 20
     wait_for_service_timeout: 1000
     action_server_result_timeout: 900.0
     navigators: ["navigate_to_pose", "navigate_through_poses"]
@@ -104,16 +94,21 @@ bt_navigator:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
     navigate_through_poses:
       plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
+    error_code_names:
+      - compute_path_error_code
+      - follow_path_error_code
 
+# ============================================
+# CONTROLLER SERVER
+# ============================================
 controller_server:
   ros__parameters:
     use_sim_time: false
     
-    # Controller at 10Hz - stable for Pi5
     controller_frequency: 10.0
     
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.001
+    min_x_velocity_threshold: 0.01
+    min_y_velocity_threshold: 0.01
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.5
     
@@ -121,97 +116,68 @@ controller_server:
     goal_checker_plugins: ["general_goal_checker"]
     controller_plugins: ["FollowPath"]
     
-    # ============================================
-    # PROGRESS CHECKER - Lenient for slow careful movement
-    # ============================================
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.08    # Need 8cm progress
-      movement_time_allowance: 30.0     # 30 seconds allowed
+      required_movement_radius: 0.08
+      movement_time_allowance: 60.0
     
-    # ============================================
-    # GOAL CHECKER
-    # ============================================
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.08          # 8cm position tolerance
-      yaw_goal_tolerance: 0.15         # ~8.5° orientation tolerance
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 3.14
     
     # ============================================
-    # DWB LOCAL PLANNER - SLOW SAFE MECANUM MOTION
+    # DWB LOCAL PLANNER
     # ============================================
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: False
       
-      # ------------------------------------------
-      # VELOCITY LIMITS - SLOW FOR AMCL TO TRACK
-      # ------------------------------------------
-      min_vel_x: -0.06         # Slow reverse
-      min_vel_y: -0.06         # Slow strafe
-      max_vel_x: 0.10          # 10 cm/s forward MAX
-      max_vel_y: 0.06          # 6 cm/s strafe MAX
-      max_vel_theta: 0.4       # ~23°/s rotation MAX
+      min_vel_x: -0.04
+      min_vel_y: -0.04
+      max_vel_x: 0.04
+      max_vel_y: 0.04
+      max_vel_theta: 0.0
       
       min_speed_xy: 0.0
-      max_speed_xy: 0.10
+      max_speed_xy: 0.045
       min_speed_theta: 0.0
       
-      # ------------------------------------------
-      # ACCELERATION - VERY GENTLE
-      # ------------------------------------------
-      acc_lim_x: 0.2           # Gentle acceleration
-      acc_lim_y: 0.2
-      acc_lim_theta: 0.3
-      decel_lim_x: -0.2
-      decel_lim_y: -0.2
-      decel_lim_theta: -0.3
+      acc_lim_x: 0.15
+      acc_lim_y: 0.15
+      acc_lim_theta: 0.0
+      decel_lim_x: -0.15
+      decel_lim_y: -0.15
+      decel_lim_theta: 0.0
       
-      # ------------------------------------------
-      # TRAJECTORY SAMPLING
-      # ------------------------------------------
-      vx_samples: 15
-      vy_samples: 5
-      vtheta_samples: 20
-      sim_time: 3.0            # Look ahead 3 seconds
+      vx_samples: 20
+      vy_samples: 10
+      vtheta_samples: 1
+      sim_time: 2.0
       linear_granularity: 0.05
       angular_granularity: 0.025
       
-      # ------------------------------------------
-      # TOLERANCES
-      # ------------------------------------------
       transform_tolerance: 1.0
-      xy_goal_tolerance: 0.08
-      trans_stopped_velocity: 0.08
+      xy_goal_tolerance: 0.25
+      trans_stopped_velocity: 0.01
       short_circuit_trajectory_evaluation: True
-      stateful: True
+      stateful: False
       
-      # ------------------------------------------
-      # CRITICS - BALANCED FOR SMOOTH MOTION
-      # ------------------------------------------
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      
+      critics: ["Oscillation", "BaseObstacle", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02
-      PathAlign.scale: 32.0
-      PathAlign.forward_point_distance: 0.1
-      PathDist.scale: 32.0
-      GoalAlign.scale: 24.0
-      GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 16.0
       GoalDist.scale: 24.0
-      RotateToGoal.scale: 32.0
-      RotateToGoal.slowing_factor: 5.0
-      RotateToGoal.lookahead_time: -1.0
-      Oscillation.scale: 1.0
+      Oscillation.scale: 10.0
 
 # ============================================
-# LOCAL COSTMAP - PREVENT STACKING
+# LOCAL COSTMAP — DUAL SENSOR (RPLIDAR + RealSense)
 # ============================================
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 2.0
+      update_frequency: 10.0
+      publish_frequency: 5.0
       global_frame: odom
       robot_base_frame: base_footprint
       use_sim_time: false
@@ -222,47 +188,61 @@ local_costmap:
       resolution: 0.05
       robot_radius: 0.18
       
-      # High transform tolerance
       transform_tolerance: 1.0
       
-      # ============================================
-      # PLUGINS - OBSTACLE CLEARING ENABLED
-      # ============================================
       plugins: ["obstacle_layer", "inflation_layer"]
       
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan
-        combination_method: 1        # Overwrite (prevents stacking)
+        observation_sources: scan depth_scan
+        combination_method: 1
         
+        # Source 1: RPLIDAR — 360° coverage, marks + clears
         scan:
           topic: /scan
           data_type: "LaserScan"
           marking: True
-          clearing: True             # CLEAR old obstacles
+          clearing: True
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          obstacle_max_range: 3.0
+          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.0
+          inf_is_valid: False
+        
+        # Source 2: RealSense depth camera — forward-facing, marks only
+        # Catches obstacles above/below RPLIDAR plane (table edges, etc.)
+        # observation_persistence=3.0: dynamic objects fade after 3 seconds
+        depth_scan:
+          topic: /camera_scan
+          data_type: "LaserScan"
+          marking: True
+          clearing: False
           max_obstacle_height: 2.0
           min_obstacle_height: 0.0
           obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-          raytrace_max_range: 3.5    # Clear beyond obstacle range
-          raytrace_min_range: 0.0
+          obstacle_min_range: 0.20
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.20
           inf_is_valid: False
+          observation_persistence: 3.0
           
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 2.5
-        inflation_radius: 0.35
+        inflation_radius: 0.25 #was 0.35 - too wide for doorways
         
       always_send_full_costmap: True
 
 # ============================================
-# GLOBAL COSTMAP - PREVENT STACKING
+# GLOBAL COSTMAP — DUAL SENSOR (RPLIDAR + RealSense)
 # ============================================
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 1.0
+      update_frequency: 2.0
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_footprint
@@ -284,53 +264,77 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan
-        combination_method: 1        # Overwrite (prevents stacking)
+        observation_sources: scan depth_scan
+        combination_method: 1
         
+        # Source 1: RPLIDAR — 360° coverage, marks + clears
         scan:
           topic: /scan
           data_type: "LaserScan"
           marking: True
-          clearing: True             # CLEAR old obstacles
+          clearing: True
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          obstacle_max_range: 3.0
+          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.0
+          inf_is_valid: False
+        
+        # Source 2: RealSense depth camera — forward-facing, marks only
+        depth_scan:
+          topic: /camera_scan
+          data_type: "LaserScan"
+          marking: True
+          clearing: False
           max_obstacle_height: 2.0
           min_obstacle_height: 0.0
           obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-          raytrace_max_range: 3.5
-          raytrace_min_range: 0.0
+          obstacle_min_range: 0.20
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.20
           inf_is_valid: False
+          observation_persistence: 3.0
           
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 2.5
-        inflation_radius: 0.35
+        inflation_radius: 0.20 #was0.25 #was 0.35 - too wide for doorways
         
       always_send_full_costmap: True
 
+# ============================================
+# MAP SERVER
+# ============================================
 map_server:
   ros__parameters:
     use_sim_time: false
     yaml_filename: ""
 
+# ============================================
+# PLANNER SERVER — A* ENABLED
+# ============================================
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 5.0
+    expected_planner_frequency: 20.0
     use_sim_time: false
     planner_plugins: ["GridBased"]
     
     GridBased:
       plugin: "nav2_navfn_planner::NavfnPlanner"
-      tolerance: 0.5
-      use_astar: false
+      tolerance: 0.50 #was 0.25
+      use_astar: true
       allow_unknown: true
 
+# ============================================
+# BEHAVIOR SERVER
+# ============================================
 behavior_server:
   ros__parameters:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
-    
     spin:
       plugin: "nav2_behaviors::Spin"
     backup:
@@ -346,7 +350,6 @@ behavior_server:
     use_sim_time: false
     simulate_ahead_time: 2.0
     
-    # Slow recovery movements
-    max_rotational_vel: 0.25
+    max_rotational_vel: 0.15
     min_rotational_vel: 0.08
-    rotational_acc_lim: 0.3
+    rotational_acc_lim: 0.5

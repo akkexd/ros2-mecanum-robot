@@ -5,7 +5,6 @@ OPTIMIZED Navigation Launch File
 - Auto-activation (no manual lifecycle commands)
 - Designed for mecanum robot on carpet
 """
-
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, TimerAction
@@ -20,7 +19,7 @@ def generate_launch_description():
     
     nav2_params_file = os.path.join(pkg_bringup, 'config', 'nav2_params.yaml')
     ekf_params_file = os.path.join(pkg_bringup, 'config', 'ekf_nav.yaml')
-    map_file = os.path.join(pkg_bringup, 'maps', 'room_20260217_022826.yaml')
+    map_file = os.path.join(pkg_bringup, 'maps', 'apartment_full_cleaned.yaml')
     urdf_file = os.path.join(pkg_description, 'urdf', 'mecanum_robot.urdf')
     
     with open(urdf_file, 'r') as f:
@@ -118,9 +117,9 @@ def generate_launch_description():
             parameters=[{
                 'scan_height': 30,
                 'scan_time': 0.033,
-                'range_min': 0.20,
+                'range_min': 0.35,
                 'range_max': 3.0,
-                'output_frame_id': 'camera_depth_optical_frame',
+                'output_frame_id': 'camera_depth_frame',
             }],
             remappings=[
                 ('depth', '/camera/camera/depth/image_rect_raw'),

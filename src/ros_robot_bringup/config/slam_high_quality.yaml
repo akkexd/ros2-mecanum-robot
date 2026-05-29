@@ -1,3 +1,8 @@
+# =============================================================================
+# SLAM TOOLBOX — High Quality Mapping with EKF Odometry
+# Resolution 0.05 matches nav2 costmap for seamless deployment
+# Based on slam_high_quality.yaml with EKF-compatible settings
+# =============================================================================
 slam_toolbox:
   ros__parameters:
     # Solver
@@ -8,7 +13,7 @@ slam_toolbox:
     ceres_dogleg_type: TRADITIONAL_DOGLEG
     ceres_loss_function: None
 
-    # Frame IDs
+    # Frames — matches EKF + nav2 config
     odom_frame: odom
     map_frame: map
     base_frame: base_footprint
@@ -16,26 +21,21 @@ slam_toolbox:
     use_map_saver: true
     mode: mapping
 
-    # HIGH QUALITY SETTINGS
-    # Finer resolution for better detail
-    resolution: 0.03
-    
-    # Use reliable range (not max)
+    # Resolution — matches nav2 costmap (0.05)
+    resolution: 0.05
+
+    # Laser range
     max_laser_range: 8.0
-    
-    # More frequent scan matching
+
+    # Scan matching — tighter than default for better accuracy
     minimum_travel_distance: 0.2
     minimum_travel_heading: 0.2
-    
-    # More scans in buffer for better matching
     scan_buffer_size: 15
     scan_buffer_maximum_scan_distance: 8.0
-    
-    # Tighter scan matching
     link_match_minimum_response_fine: 0.15
     link_scan_maximum_distance: 1.0
-    
-    # Loop closure (IMPORTANT!)
+
+    # Loop closure — critical for multi-room mapping
     do_loop_closing: true
     loop_search_maximum_distance: 4.0
     loop_match_minimum_chain_size: 15
@@ -43,7 +43,7 @@ slam_toolbox:
     loop_match_minimum_response_coarse: 0.4
     loop_match_minimum_response_fine: 0.5
 
-    # Finer correlation search
+    # Correlation search — finer than default
     correlation_search_space_dimension: 0.4
     correlation_search_space_resolution: 0.008
     correlation_search_space_smear_deviation: 0.08
@@ -66,12 +66,13 @@ slam_toolbox:
     # Update rates
     transform_publish_period: 0.02
     map_update_interval: 3.0
-    
+
     # TF
     tf_buffer_duration: 30.0
     transform_timeout: 0.2
-    
-    # Debug
+
+    # Misc
     debug_logging: false
     throttle_scans: 1
     enable_interactive_mode: true
+    stack_size_to_use: 40000000

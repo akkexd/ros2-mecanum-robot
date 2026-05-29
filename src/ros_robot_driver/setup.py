@@ -25,6 +25,8 @@ setup(
             'driver_node = ros_robot_driver.driver_node:main',
             'rotate_after_goal = ros_robot_driver.rotate_after_goal:main',
             'goal_manager = ros_robot_driver.goal_manager:main',
+            'goal_manager_v4 = ros_robot_driver.goal_manager_v4:main',
+            'measure_doorways = ros_robot_driver.measure_doorways:main',
         ],
     },
 )

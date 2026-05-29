@@ -24,7 +24,7 @@ class MecanumDriverNode(Node):
     def __init__(self):
         super().__init__('mecanum_driver')
         
-        self.declare_parameter('wheel_radius', 0.0325)
+        self.declare_parameter('wheel_radius', 0.050)
         self.declare_parameter('wheel_base', 0.14)
         self.declare_parameter('track_width', 0.15)
         self.declare_parameter('serial_port', '/dev/ttyUSB0')
